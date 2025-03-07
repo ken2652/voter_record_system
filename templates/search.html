@@ -1,0 +1,136 @@
+{% extends "layout.html" %}
+
+{% block title %}Search Voters{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h4 class="card-title mb-0">Search Voter Records</h4>
+    </div>
+    <div class="card-body">
+        <form id="searchForm" action="{{ url_for('search.search_results') }}" method="GET">
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label for="name" class="form-label">Name</label>
+                    <input type="text" class="form-control" id="name" name="name" 
+                           placeholder="Search by name...">
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="barangay_id" class="form-label">Barangay</label>
+                    <select class="form-select" id="barangay_id" name="barangay_id">
+                        <option value="">All Barangays</option>
+                        {% for barangay in barangays %}
+                        <option value="{{ barangay.id }}">{{ barangay.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="sitio_id" class="form-label">Sitio</label>
+                    <select class="form-select" id="sitio_id" name="sitio_id" disabled>
+                        <option value="">All Sitios</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="precinct" class="form-label">Precinct No.</label>
+                    <input type="text" class="form-control" id="precinct" name="precinct" 
+                           placeholder="Search by precinct...">
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">All Status</option>
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                        <option value="Deceased">Deceased</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-between align-items-center">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search me-1"></i>Search
+                </button>
+                
+                <div class="btn-group">
+                    <button type="button" class="btn btn-outline-secondary" onclick="clearForm()">
+                        <i class="fas fa-eraser me-1"></i>Clear
+                    </button>
+                    <a href="{{ url_for('search.export_results') }}" class="btn btn-success" id="exportBtn">
+                        <i class="fas fa-file-excel me-1"></i>Export to Excel
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="searchResults" class="mt-4">
+    <!-- Search results will be loaded here -->
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const barangaySelect = document.getElementById('barangay_id');
+    const sitioSelect = document.getElementById('sitio_id');
+    const searchForm = document.getElementById('searchForm');
+    const exportBtn = document.getElementById('exportBtn');
+    
+    // Handle barangay selection
+    barangaySelect.addEventListener('change', function() {
+        const barangayId = this.value;
+        sitioSelect.disabled = !barangayId;
+        
+        if (barangayId) {
+            // Fetch sitios for selected barangay
+            fetch(`/voter/get_sitios/${barangayId}`)
+                .then(response => response.json())
+                .then(sitios => {
+                    sitioSelect.innerHTML = '<option value="">All Sitios</option>';
+                    sitios.forEach(sitio => {
+                        const option = document.createElement('option');
+                        option.value = sitio.id;
+                        option.textContent = sitio.name;
+                        sitioSelect.appendChild(option);
+                    });
+                })
+                .catch(error => console.error('Error fetching sitios:', error));
+        } else {
+            sitioSelect.innerHTML = '<option value="">All Sitios</option>';
+            sitioSelect.disabled = true;
+        }
+    });
+    
+    // Handle form submission
+    searchForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const searchParams = new URLSearchParams(formData);
+        
+        // Update export button URL
+        exportBtn.href = `/search/export?${searchParams.toString()}`;
+        
+        // Fetch and display results
+        fetch(`/search/results?${searchParams.toString()}`)
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('searchResults').innerHTML = html;
+            })
+            .catch(error => console.error('Error fetching results:', error));
+    });
+});
+
+function clearForm() {
+    document.getElementById('searchForm').reset();
+    document.getElementById('sitio_id').disabled = true;
+    document.getElementById('searchResults').innerHTML = '';
+}
+</script>
+{% endblock %} 

@@ -1,0 +1,93 @@
+{% if results %}
+<div class="card">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Search Results</h5>
+            <span class="badge bg-primary">{{ results|length }} records found</span>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Voter ID</th>
+                        <th>Name</th>
+                        <th>Barangay</th>
+                        <th>Sitio</th>
+                        <th>Precinct No.</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for voter in results %}
+                    <tr>
+                        <td>{{ voter.voter_id }}</td>
+                        <td>{{ voter.last_name }}, {{ voter.first_name }} {{ voter.middle_name }}</td>
+                        <td>{{ voter.barangay_name }}</td>
+                        <td>{{ voter.sitio_name }}</td>
+                        <td>{{ voter.precinct_number }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if voter.status == 'Active' else 'danger' if voter.status == 'Deceased' else 'warning' }}">
+                                {{ voter.status }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('voter.view_voter', voter_id=voter.voter_id) }}" 
+                                   class="btn btn-outline-primary" title="View">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('voter.edit_voter', voter_id=voter.voter_id) }}" 
+                                   class="btn btn-outline-secondary" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button type="button" class="btn btn-outline-danger" title="Delete"
+                                        onclick="confirmDelete('{{ voter.voter_id }}', '{{ voter.last_name }}, {{ voter.first_name }}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the voter record for:</p>
+                <p class="fw-bold" id="deleteVoterName"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete(voterId, voterName) {
+    document.getElementById('deleteVoterName').textContent = voterName;
+    document.getElementById('deleteForm').action = `/voter/delete/${voterId}`;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+{% else %}
+<div class="alert alert-info">
+    <i class="fas fa-info-circle me-2"></i>No records found matching your search criteria.
+</div>
+{% endif %} 

@@ -1,0 +1,1199 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid p-4" style="background-color: #f5f5f5; min-height: 100vh;">
+    <!-- Title Card -->
+    <div class="card rounded-4 border-0 shadow mb-4">
+        <div class="card-body p-4">
+            <h4 class="card-title mb-0 text-center text-uppercase" style="font-family: 'Poppins', sans-serif; color: #333; font-weight: 600;">VOTER RECORDS</h4>
+        </div>
+    </div>
+    
+    <!-- Barangay Cards Grid -->
+    <div class="row g-4" id="barangayGrid">
+        {% set barangays = [
+            "ADLAWAN", "BAGO", "BALIJUAGAN", "BANICA", "BARRA", "BATO", "BAYBAY", "BOLO",
+            "CABUGAO", "CAGAY", "COGON", "CULAJAO", "CULASI", "DAYAO", "DINGINAN", "DUMOLOG",
+            "GABU-AN", "INZO ARNALDO VILLAGE", "JUMAGUICJIC", "LANOT", "LAWA-AN", "LIBAS",
+            "LIONG", "LOCTUGAN", "LONOY", "MILIBILI", "MONGPONG", "OLOTAYAN", "POB I",
+            "POB II", "POB III", "POB IV", "POB V", "POB VI", "POB VII", "POB VIII",
+            "POB IX", "POB X", "POB XI", "PUNTA COGON", "PUNTA TABUC", "SAN JOSE",
+            "SIBAGUAN", "TALON", "TANQUE", "TANZA", "TIZA"
+        ] %}
+        
+        {% for barangay in barangays %}
+        <div class="col-md-3">
+            <div class="card h-100 rounded-4 border-0 shadow hover-card" onclick="showBarangayRecords('{{ barangay }}')">
+                <div class="card-body p-4 d-flex flex-column align-items-center justify-content-center">
+                    <h5 class="card-title mb-2 text-center" style="font-family: 'Poppins', sans-serif;">{{ barangay }}</h5>
+                    <div class="d-flex flex-column align-items-center">
+                        <span class="badge bg-primary rounded-pill mb-2" style="font-size: 0.9em;">
+                            Total Records: {{ barangay_stats[barangay].total_voters }}
+                        </span>
+                        <div class="small text-muted">
+                            <span title="Rice Beneficiaries">RB: {{ barangay_stats[barangay].rice_beneficiaries }}</span> |
+                            <span title="Rice Beneficiary Heads">RBH: {{ barangay_stats[barangay].rbh_count }}</span> |
+                            <span title="Barangay Leaders">BL: {{ barangay_stats[barangay].bl_count }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Barangay Records Table (Initially Hidden) -->
+    <div id="barangayRecordsSection" class="mt-4" style="display: none;">
+        <div class="card rounded-4 border-0 shadow mb-4">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div class="d-flex align-items-center">
+                        <button class="btn btn-secondary me-3" onclick="hideBarangayRecords()">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Barangays
+                        </button>
+                        <h5 class="card-title mb-0" id="selectedBarangayTitle" style="font-family: 'Poppins', sans-serif;"></h5>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary me-2" onclick="showAddRecordModal()" style="background-color: #0052cc; border: none;">
+                            <i class="fas fa-plus me-2"></i>Add Record
+                        </button>
+                        <button type="button" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#printSelectionModal" style="background-color: #0052cc; border: none; font-family: 'Poppins', sans-serif;">
+                            <i class="fas fa-list-check me-2"></i>Select to Print
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="window.print()" style="background-color: #0052cc; border: none; font-family: 'Poppins', sans-serif;">
+                            <i class="fas fa-print me-2"></i>Print Table
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Search Bar and Filters -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="col-md-4">
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0">
+                    <i class="fas fa-search text-muted"></i>
+                </span>
+                            <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Search records..." style="font-family: 'Poppins', sans-serif;">
+            </div>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <select id="duplicateFilter" class="form-select me-2" style="font-family: 'Poppins', sans-serif;">
+                <option value="all">Show All Records</option>
+                            <option value="cross_matching">Cross Matching</option>
+                <option value="validated_consolidated">Validated/Consolidated (Duplication)</option>
+                <option value="pre_category_barangay">Pre Category Barangay</option>
+                <option value="pre_category_rice">Pre Category Rice</option>
+            </select>
+                    </div>
+                </div>
+
+                <!-- Table Section -->
+                <div class="table-responsive bg-white rounded shadow">
+                    <table class="table table-bordered table-hover mb-0">
+                        <!-- Existing table headers and structure -->
+                        <thead>
+                            <tr>
+                                <th class="text-center bg-success text-white small-header" style="width: 5%">NO.</th>
+                                <th class="text-center bg-success text-white small-header" style="width: 15%">VOTER'S NAME</th>
+                                <th class="text-center bg-success text-white small-header" style="width: 8%">PRECINCT NO.</th>
+                                <th class="text-center bg-success text-white small-header" style="width: 10%">BARANGAY</th>
+                                <th class="text-center bg-success text-white small-header" style="width: 8%">SITIO</th>
+                                <th class="text-center bg-success text-white small-header">RICE BENEFICIARY</th>
+                                <th class="text-center bg-success text-white small-header">RICE BENEFICIARY HEAD</th>
+                                <th class="text-center bg-success text-white small-header">BARANGAY LEADER</th>
+                                <th class="text-center bg-success text-white small-header" colspan="3">LEVEL</th>
+                                <th class="text-center bg-success text-white small-header" style="width: 8%">REMARKS</th>
+                                <th class="text-center bg-success text-white small-header" style="width: 8%">RBH NAME</th>
+                                <th class="text-center bg-success text-white small-header" style="width: 8%">BL NAME</th>
+                                <th class="text-center bg-success text-white small-header" style="width: 5%">ACTION</th>
+                            </tr>
+                            <tr>
+                                <th colspan="5" class="text-center bg-success text-white small-header"></th>
+                                <th class="text-center bg-success text-white small-header">1</th>
+                                <th class="text-center bg-success text-white small-header">2</th>
+                                <th class="text-center bg-success text-white small-header">3</th>
+                                <th class="text-center bg-success text-white small-header">1</th>
+                                <th class="text-center bg-success text-white small-header">2</th>
+                                <th class="text-center bg-success text-white small-header">3</th>
+                                <th colspan="4" class="text-center bg-success text-white small-header"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="barangayRecordsBody">
+                            <!-- Records will be populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Record Modal -->
+    <div class="modal fade" id="addRecordModal" tabindex="-1" aria-labelledby="addRecordModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white" style="background-color: #0052cc !important;">
+                    <h5 class="modal-title" id="addRecordModalLabel" style="font-family: 'Poppins', sans-serif;">Add New Record</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addRecordForm" method="POST" action="{{ url_for('add_record') }}">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="voters_name" class="form-label">Voter's Name</label>
+                                <input type="text" class="form-control" id="voters_name" name="voters_name" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="precinct_no" class="form-label">Precinct No.</label>
+                                <input type="text" class="form-control" id="precinct_no" name="precinct_no" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="sitio" class="form-label">Sitio</label>
+                                <input type="text" class="form-control" id="sitio" name="sitio">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="barangay" class="form-label">Barangay</label>
+                                <input type="text" class="form-control" id="barangay" name="barangay" required>
+                            </div>
+                            <div class="col-12">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="rice_beneficiary" name="rice_beneficiary_1" value="1">
+                                            <label class="form-check-label" for="rice_beneficiary">Rice Beneficiary</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="rice_beneficiary_head" name="rice_beneficiary_head_2" value="1">
+                                            <label class="form-check-label" for="rice_beneficiary_head">Rice Beneficiary Head</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="barangay_leader" name="barangay_leader_3" value="1">
+                                            <label class="form-check-label" for="barangay_leader">Barangay Leader</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="level_1" name="level_1" value="1">
+                                            <label class="form-check-label" for="level_1">Level 1</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="level_2" name="level_2" value="1">
+                                            <label class="form-check-label" for="level_2">Level 2</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="level_3" name="level_3" value="1">
+                                            <label class="form-check-label" for="level_3">Level 3</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <label for="remarks" class="form-label">Remarks</label>
+                                <textarea class="form-control" id="remarks" name="remarks" rows="2"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="rbh_name" class="form-label">RBH Name</label>
+                                <input type="text" class="form-control" id="rbh_name" name="rbh_name">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="bl_name" class="form-label">BL Name</label>
+                                <input type="text" class="form-control" id="bl_name" name="bl_name">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" form="addRecordForm" class="btn btn-primary" style="background-color: #0052cc;">Save Record</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Print Selection Modal -->
+    <div class="modal fade" id="printSelectionModal" tabindex="-1" aria-labelledby="printSelectionModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white" style="background-color: #0052cc !important;">
+                    <h5 class="modal-title" id="printSelectionModalLabel" style="font-family: 'Poppins', sans-serif;">Select Columns to Print</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex justify-content-end mb-3">
+                        <button type="button" class="btn btn-sm btn-outline-primary me-2" onclick="window.selectAllColumns()" style="font-family: 'Poppins', sans-serif;">
+                            <i class="fas fa-check-square me-1"></i>Select All
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.deselectAllColumns()" style="font-family: 'Poppins', sans-serif;">
+                            <i class="fas fa-square me-1"></i>Deselect All
+                        </button>
+                    </div>
+                    <div class="row g-3">
+                        <!-- Basic Information -->
+                        <div class="col-12">
+                            <strong class="d-block mb-2">Basic Information</strong>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input print-column" type="checkbox" id="print_no" value="0" checked>
+                                        <label class="form-check-label" for="print_no">NO.</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input print-column" type="checkbox" id="print_name" value="1" checked>
+                                        <label class="form-check-label" for="print_name">VOTER'S NAME</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input print-column" type="checkbox" id="print_precinct" value="2" checked>
+                                        <label class="form-check-label" for="print_precinct">PRECINCT NO.</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input print-column" type="checkbox" id="print_barangay" value="3" checked>
+                                        <label class="form-check-label" for="print_barangay">BARANGAY</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input print-column" type="checkbox" id="print_sitio" value="4" checked>
+                                        <label class="form-check-label" for="print_sitio">SITIO</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Rice Beneficiary Group -->
+                        <div class="col-12">
+                            <strong class="d-block mb-2">Rice Beneficiary Group</strong>
+                            <div class="row g-2">
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input print-column" type="checkbox" id="print_rb" value="5" checked>
+                                        <label class="form-check-label" for="print_rb">RICE BENEFICIARY (1)</label>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input print-column" type="checkbox" id="print_rbh" value="6" checked>
+                                        <label class="form-check-label" for="print_rbh">RICE BENEFICIARY HEAD (2)</label>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input print-column" type="checkbox" id="print_bl" value="7" checked>
+                                        <label class="form-check-label" for="print_bl">BARANGAY LEADER (3)</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Level Group -->
+                        <div class="col-12">
+                            <strong class="d-block mb-2">Level</strong>
+                            <div class="row g-2">
+                                <div class="col-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input print-column" type="checkbox" id="print_level1" value="8" checked>
+                                        <label class="form-check-label" for="print_level1">LEVEL 1</label>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input print-column" type="checkbox" id="print_level2" value="9" checked>
+                                        <label class="form-check-label" for="print_level2">LEVEL 2</label>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input print-column" type="checkbox" id="print_level3" value="10" checked>
+                                        <label class="form-check-label" for="print_level3">LEVEL 3</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Additional Information -->
+                        <div class="col-12">
+                            <strong class="d-block mb-2">Additional Information</strong>
+                            <div class="row g-2">
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input print-column" type="checkbox" id="print_remarks" value="11" checked>
+                                        <label class="form-check-label" for="print_remarks">REMARKS</label>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input print-column" type="checkbox" id="print_rbh_name" value="12" checked>
+                                        <label class="form-check-label" for="print_rbh_name">RBH NAME</label>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input print-column" type="checkbox" id="print_bl_name" value="13" checked>
+                                        <label class="form-check-label" for="print_bl_name">BL NAME</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="handlePrintFromModal()" style="background-color: #0052cc;">
+                        <i class="fas fa-print me-2"></i>Print Selected
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Record Modal -->
+    <div class="modal fade" id="editRecordModal" tabindex="-1" aria-labelledby="editRecordModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white" style="background-color: #0052cc !important;">
+                    <h5 class="modal-title" id="editRecordModalLabel" style="font-family: 'Poppins', sans-serif;">Edit Record</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editRecordForm" method="POST">
+                        <input type="hidden" id="edit_record_id" name="record_id">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="edit_voters_name" class="form-label">Voter's Name</label>
+                                <input type="text" class="form-control" id="edit_voters_name" name="voters_name" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="edit_precinct_no" class="form-label">Precinct No.</label>
+                                <input type="text" class="form-control" id="edit_precinct_no" name="precinct_no" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="edit_sitio" class="form-label">Sitio</label>
+                                <input type="text" class="form-control" id="edit_sitio" name="sitio">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit_barangay" class="form-label">Barangay</label>
+                                <input type="text" class="form-control" id="edit_barangay" name="barangay" required readonly>
+                            </div>
+                            <div class="col-12">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="edit_rice_beneficiary" name="rice_beneficiary_1" value="1">
+                                            <label class="form-check-label" for="edit_rice_beneficiary">Rice Beneficiary</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="edit_rice_beneficiary_head" name="rice_beneficiary_head_2" value="1">
+                                            <label class="form-check-label" for="edit_rice_beneficiary_head">Rice Beneficiary Head</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="edit_barangay_leader" name="barangay_leader_3" value="1">
+                                            <label class="form-check-label" for="edit_barangay_leader">Barangay Leader</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="edit_level_1" name="level_1" value="1">
+                                            <label class="form-check-label" for="edit_level_1">Level 1</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="edit_level_2" name="level_2" value="1">
+                                            <label class="form-check-label" for="edit_level_2">Level 2</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="edit_level_3" name="level_3" value="1">
+                                            <label class="form-check-label" for="edit_level_3">Level 3</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <label for="edit_remarks" class="form-label">Remarks</label>
+                                <textarea class="form-control" id="edit_remarks" name="remarks" rows="2"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit_rbh_name" class="form-label">RBH Name</label>
+                                <input type="text" class="form-control" id="edit_rbh_name" name="rbh_name">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit_bl_name" class="form-label">BL Name</label>
+                                <input type="text" class="form-control" id="edit_bl_name" name="bl_name">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" form="editRecordForm" class="btn btn-primary" style="background-color: #0052cc;">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4 bg-white p-3 rounded shadow">
+        <p class="mb-1 text-success"><strong>LEGEND:</strong></p>
+        <p class="mb-1">RB - RICE BENEFICIARY</p>
+        <p class="mb-1">RBH - RICE BENEFICIARY HEAD</p>
+        <p class="mb-1">BL - BARANGAY LEADER</p>
+        <p class="mb-1">1, 2, 3 - LEVEL INDICATORS</p>
+    </div>
+</div>
+
+<style>
+    
+    .bg-success {
+        background-color: #0052cc !important;
+    }
+    .table th, .table td {
+        vertical-align: middle;
+        border: 1px solid #dee2e6;
+        padding: 12px;
+        font-size: 15px;
+    }
+    .table thead th {
+        border-bottom: 2px solid #dee2e6;
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1.3;
+        padding: 14px 10px;
+    }
+    .table tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    .table tbody td {
+        color: #333;
+        line-height: 1.2;
+    }
+    .table {
+        border-collapse: collapse;
+        margin-bottom: 0;
+        background-color: #fff;
+    }
+    .small-header {
+        font-size: 13px !important;
+        padding: 12px 8px !important;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .text-center {
+        text-align: center !important;
+    }
+    tbody tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+    tbody tr td {
+        padding: 14px 10px;
+    }
+    .table-responsive {
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .modal-content {
+        border-radius: 8px;
+        border: none;
+    }
+    .modal-header {
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+    }
+    .form-label {
+        font-family: 'Poppins', sans-serif;
+        font-size: 14px;
+        color: #333;
+    }
+    .form-control {
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+    }
+    .form-check-label {
+        font-family: 'Poppins', sans-serif;
+        font-size: 14px;
+    }
+    .modal-footer {
+        border-top: 1px solid #dee2e6;
+    }
+    /* Main Content */
+    .main-content.expanded {
+        margin-left: 80px;
+    }
+
+    /* Search Bar Styles */
+    #searchInput {
+        padding: 0.75rem 1rem;
+        font-size: 14px;
+        border-radius: 0 6px 6px 0;
+    }
+    
+    #searchInput:focus {
+        box-shadow: none;
+        border-color: #dee2e6;
+    }
+    
+    .input-group-text {
+        border-radius: 6px 0 0 6px;
+    }
+
+    /* Print Styles */
+    @media print {
+        .btn, 
+        #sidebar,
+        .user-profile,
+        .modal,
+        .input-group,
+        .d-flex.justify-content-between,
+        .print-selection,
+        .bg-white.p-3.rounded.shadow.mb-3 {  /* Hide the checkbox section */
+            display: none !important;
+        }
+        
+        .container-fluid {
+            padding: 0 !important;
+            margin: 0 !important;
+            width: 100% !important;
+        }
+        
+        .table-responsive {
+            overflow: visible !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            width: 100% !important;
+        }
+        
+        .table {
+            width: 100% !important;
+            margin: 0 !important;
+            border: 1px solid #000 !important;
+            table-layout: auto !important;
+        }
+        
+        .table th,
+        .table td {
+            border: 1px solid #000 !important;
+            padding: 6px !important;
+            font-size: 11px !important;
+            color: #000 !important;
+            word-wrap: break-word !important;
+            background-color: #fff !important;
+        }
+        
+        /* Hide deselected columns completely */
+        .table th.hide-print,
+        .table td.hide-print {
+            display: none !important;
+            width: 0 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            border: none !important;
+        }
+        
+        /* Ensure visible columns take up available space */
+        .table th:not(.hide-print),
+        .table td:not(.hide-print) {
+            display: table-cell !important;
+        }
+        
+        /* Hide the level header when all level columns are hidden */
+        .level-header.all-hidden {
+            display: none !important;
+        }
+        
+        .bg-success {
+            background-color: #fff !important;
+            color: #000 !important;
+        }
+        
+        .text-white {
+            color: #000 !important;
+        }
+
+        .small-header {
+            color: #000 !important;
+            background-color: #fff !important;
+        }
+        
+        body {
+            background-color: white !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            color: #000 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        
+        .card {
+            box-shadow: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        
+        .mt-4 {
+            margin-top: 1rem !important;
+        }
+        
+        .shadow {
+            box-shadow: none !important;
+        }
+
+        /* Hide non-visible rows and columns when printing */
+        tr[style*="display: none"],
+        .hide-print {
+            display: none !important;
+        }
+
+        /* Ensure legend text is visible */
+        .text-success {
+            color: #000 !important;
+        }
+
+        /* Force all text to be black */
+        * {
+            color: #000 !important;
+            background-color: #fff !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+    }
+    .hover-card {
+        transition: transform 0.2s ease-in-out;
+        cursor: pointer;
+    }
+    .hover-card:hover {
+        transform: translateY(-5px);
+    }
+    #barangayGrid {
+        transition: all 0.3s ease-in-out;
+    }
+    #barangayRecordsSection {
+        transition: all 0.3s ease-in-out;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const duplicateFilter = document.getElementById('duplicateFilter');
+    const tableRows = document.querySelectorAll('tbody tr');
+    let currentBarangay = '';
+    
+    // Add form submission handler
+    const addRecordForm = document.getElementById('addRecordForm');
+    addRecordForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.text();
+        })
+        .then(data => {
+            // Close the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addRecordModal'));
+            modal.hide();
+            
+            // Refresh the current barangay records
+            if (currentBarangay) {
+                showBarangayRecords(currentBarangay);
+            }
+            
+            // Reset the form
+            addRecordForm.reset();
+            
+            // Show success message with Barangay name
+            const successMessage = `✅ New voter record has been successfully added to ${currentBarangay}`;
+            const messageDiv = document.createElement('div');
+            messageDiv.style.position = 'fixed';
+            messageDiv.style.top = '20px';
+            messageDiv.style.left = '50%';
+            messageDiv.style.transform = 'translateX(-50%)';
+            messageDiv.style.backgroundColor = '#4CAF50';
+            messageDiv.style.color = 'white';
+            messageDiv.style.padding = '15px 25px';
+            messageDiv.style.borderRadius = '8px';
+            messageDiv.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+            messageDiv.style.zIndex = '9999';
+            messageDiv.style.fontFamily = "'Poppins', sans-serif";
+            messageDiv.textContent = successMessage;
+            
+            document.body.appendChild(messageDiv);
+            
+            // Remove the message after 3 seconds
+            setTimeout(() => {
+                messageDiv.style.opacity = '0';
+                messageDiv.style.transition = 'opacity 0.5s ease';
+                setTimeout(() => {
+                    document.body.removeChild(messageDiv);
+                }, 500);
+            }, 3000);
+
+            // Fetch updated barangay stats and update the card
+            fetch(`/get_barangay_stats/${encodeURIComponent(currentBarangay)}`)
+                .then(response => response.json())
+                .then(stats => {
+                    const barangayCard = document.querySelector(`[onclick="showBarangayRecords('${currentBarangay}')"]`);
+                    if (barangayCard) {
+                        const statsDiv = barangayCard.querySelector('.small.text-muted');
+                        const totalBadge = barangayCard.querySelector('.badge');
+                        if (stats) {
+                            totalBadge.textContent = `Total Records: ${stats.total_voters}`;
+                            statsDiv.innerHTML = `
+                                <span title="Rice Beneficiaries">RB: ${stats.rice_beneficiaries}</span> |
+                                <span title="Rice Beneficiary Heads">RBH: ${stats.rbh_count}</span> |
+                                <span title="Barangay Leaders">BL: ${stats.bl_count}</span>
+                            `;
+                        }
+                    }
+                })
+                .catch(error => console.error('Error updating stats:', error));
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            // Show error message
+            const errorMessage = document.createElement('div');
+            errorMessage.style.position = 'fixed';
+            errorMessage.style.top = '20px';
+            errorMessage.style.left = '50%';
+            errorMessage.style.transform = 'translateX(-50%)';
+            errorMessage.style.backgroundColor = '#f44336';
+            errorMessage.style.color = 'white';
+            errorMessage.style.padding = '15px 25px';
+            errorMessage.style.borderRadius = '8px';
+            errorMessage.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+            errorMessage.style.zIndex = '9999';
+            errorMessage.style.fontFamily = "'Poppins', sans-serif";
+            errorMessage.textContent = '❌ Unable to add record. Please try again.';
+            
+            document.body.appendChild(errorMessage);
+            
+            // Remove the message after 3 seconds
+            setTimeout(() => {
+                errorMessage.style.opacity = '0';
+                errorMessage.style.transition = 'opacity 0.5s ease';
+                setTimeout(() => {
+                    document.body.removeChild(errorMessage);
+                }, 500);
+            }, 3000);
+        });
+    });
+
+    function filterTable() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const filterValue = duplicateFilter.value;
+        const rows = document.querySelectorAll('#barangayRecordsBody tr');
+        
+        rows.forEach(row => {
+            let show = true;
+            const cells = row.cells;
+            const voterName = cells[1].textContent.toLowerCase();
+            const rbChecked = cells[5].textContent.includes('✓');
+            const rbhChecked = cells[6].textContent.includes('✓');
+            const blChecked = cells[7].textContent.includes('✓');
+            const rbhName = cells[12].textContent.trim();
+            const blName = cells[13].textContent.trim();
+
+            // Search filter
+            if (searchTerm) {
+                show = voterName.includes(searchTerm);
+            }
+            
+            // Category filters
+            if (show && filterValue !== 'all') {
+                switch (filterValue) {
+                    case 'cross_matching':
+                        // Show records that are both RBH and BL
+                        show = rbhChecked && blChecked;
+                        break;
+                    case 'validated_consolidated':
+                        // Show records that have both RBH and BL names filled
+                        show = rbhName !== '' && blName !== '';
+                        break;
+                    case 'pre_category_barangay':
+                        // Show records that have Barangay Leader marked
+                        show = blChecked;
+                        break;
+                    case 'pre_category_rice':
+                        // Show records that have RBH Name filled
+                        show = rbhName !== '';
+                        break;
+                }
+            }
+            
+            row.style.display = show ? '' : 'none';
+        });
+
+        // Update the sequence numbers for visible rows
+        let visibleRowNumber = 1;
+        rows.forEach(row => {
+            if (row.style.display !== 'none') {
+                row.cells[0].textContent = visibleRowNumber++;
+            }
+        });
+    }
+    
+    // Add event listeners for filtering
+    searchInput.addEventListener('input', filterTable);
+    duplicateFilter.addEventListener('change', filterTable);
+    
+    // Call filterTable initially to set up initial numbering
+    filterTable();
+
+    // Print selection functions
+    window.selectAllColumns = function() {
+        document.querySelectorAll('.print-column').forEach(checkbox => {
+            checkbox.checked = true;
+        });
+    }
+
+    window.deselectAllColumns = function() {
+        document.querySelectorAll('.print-column').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+    }
+
+    function handlePrintFromModal() {
+        // Close the modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('printSelectionModal'));
+        modal.hide();
+        
+        // Call the print function
+        handlePrint();
+    }
+
+    function handlePrint() {
+        const selectedColumns = Array.from(document.querySelectorAll('.print-column:checked')).map(cb => parseInt(cb.value));
+        
+        // If no columns are selected, hide all columns
+        if (selectedColumns.length === 0) {
+            const table = document.querySelector('.table');
+            const headers = table.querySelectorAll('thead tr');
+            const rows = table.querySelectorAll('tbody tr');
+            
+            // Hide all header cells
+            headers.forEach(headerRow => {
+                headerRow.querySelectorAll('th').forEach(header => {
+                    header.classList.add('hide-print');
+                });
+            });
+            
+            // Hide all data cells
+            rows.forEach(row => {
+                row.querySelectorAll('td').forEach(cell => {
+                    cell.classList.add('hide-print');
+                });
+            });
+            
+            // Print blank page
+            window.print();
+            
+            // Restore original state
+            document.querySelectorAll('.hide-print').forEach(el => el.classList.remove('hide-print'));
+            return;
+        }
+        
+        // Get all table elements
+        const table = document.querySelector('.table');
+        const headers = table.querySelectorAll('thead tr');
+        const rows = table.querySelectorAll('tbody tr');
+        
+        // Check column groups
+        const hasLevelColumns = selectedColumns.some(col => [8, 9, 10].includes(col));
+        const hasRBColumns = selectedColumns.some(col => [5, 6, 7].includes(col));
+        const visibleLevelCols = [8, 9, 10].filter(col => selectedColumns.includes(col)).length;
+        const visibleRBCols = [5, 6, 7].filter(col => selectedColumns.includes(col)).length;
+        
+        // Handle first header row
+        const firstHeaderRow = headers[0];
+        firstHeaderRow.querySelectorAll('th').forEach((header, index) => {
+            if (header.textContent.trim() === 'LEVEL') {
+                // Handle LEVEL header
+                header.classList.toggle('level-header', true);
+                header.classList.toggle('all-hidden', !hasLevelColumns);
+                if (hasLevelColumns) {
+                    header.setAttribute('colspan', visibleLevelCols);
+                }
+            } else if (header.textContent.includes('RICE BENEFICIARY') || header.textContent === 'BARANGAY LEADER') {
+                // Handle RB group headers
+                const isRBHeader = index >= 5 && index <= 7;
+                if (isRBHeader) {
+                    header.classList.toggle('hide-print', !selectedColumns.includes(index));
+                }
+            } else if (index < 5) {
+                // First 5 columns (NO, NAME, PRECINCT, BARANGAY, SITIO)
+                header.classList.toggle('hide-print', !selectedColumns.includes(index));
+            } else if (index > 10) {
+                // REMARKS, RBH NAME, BL NAME
+                header.classList.toggle('hide-print', !selectedColumns.includes(index - 3));
+            }
+        });
+        
+        // Handle second header row (numbers under columns)
+        const secondHeaderRow = headers[1];
+        secondHeaderRow.querySelectorAll('th').forEach((header, index) => {
+            if (index < 5) {
+                // First group (empty cells under NO to SITIO)
+                header.classList.toggle('hide-print', !selectedColumns.includes(index));
+            } else if (index >= 5 && index <= 7) {
+                // Numbers under RB columns (1,2,3)
+                const rbIndex = index;
+                header.classList.toggle('hide-print', !selectedColumns.includes(rbIndex));
+            } else if (index >= 8 && index <= 10) {
+                // Numbers under LEVEL columns (1,2,3)
+                const levelIndex = index;
+                header.classList.toggle('hide-print', !selectedColumns.includes(levelIndex));
+            } else {
+                // Empty cells under REMARKS, RBH NAME, BL NAME
+                header.classList.toggle('hide-print', !selectedColumns.includes(index - 3));
+            }
+        });
+        
+        // Handle data rows
+        rows.forEach(row => {
+            row.querySelectorAll('td').forEach((cell, index) => {
+                cell.classList.toggle('hide-print', !selectedColumns.includes(index));
+            });
+        });
+        
+        // Print
+        window.print();
+        
+        // Restore original state
+        document.querySelectorAll('.hide-print').forEach(el => el.classList.remove('hide-print'));
+        document.querySelectorAll('.level-header').forEach(el => {
+            el.classList.remove('level-header', 'all-hidden');
+            if (el.hasAttribute('colspan')) {
+                el.setAttribute('colspan', '3');
+            }
+        });
+    }
+
+    // Make functions available globally
+    window.handlePrint = handlePrint;
+    window.handlePrintFromModal = handlePrintFromModal;
+
+    // Add new functions for barangay functionality
+    window.showBarangayRecords = function(barangay) {
+        currentBarangay = barangay;
+        if (!document.getElementById('barangayRecordsSection').style.display || document.getElementById('barangayRecordsSection').style.display === 'none') {
+            document.getElementById('barangayGrid').style.display = 'none';
+            document.getElementById('barangayRecordsSection').style.display = 'block';
+        }
+        document.getElementById('selectedBarangayTitle').textContent = barangay + ' Records';
+        
+        // Fetch records for the selected barangay
+        fetch(`/get_barangay_records/${encodeURIComponent(barangay)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Error fetching records: ' + data.error);
+                    return;
+                }
+                
+                const tbody = document.getElementById('barangayRecordsBody');
+                tbody.innerHTML = '';
+                
+                data.records.forEach((record, index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="text-center">${index + 1}</td>
+                        <td>${record.VOTERS_NAME || ''}</td>
+                        <td class="text-center">${record.PRECINCT_NO || ''}</td>
+                        <td>${record.BARANGAY || ''}</td>
+                        <td>${record.SITIO || ''}</td>
+                        <td class="text-center">${record.RICE_BENEFICIARY_1 === '1' ? '✓' : ''}</td>
+                        <td class="text-center">${record.RICE_BENEFICIARY_HEAD_2 === '1' ? '✓' : ''}</td>
+                        <td class="text-center">${record.BARANGAY_LEADER_3 === '1' ? '✓' : ''}</td>
+                        <td class="text-center">${record.LEVEL_1 === '1' ? '✓' : ''}</td>
+                        <td class="text-center">${record.LEVEL_2 === '1' ? '✓' : ''}</td>
+                        <td class="text-center">${record.LEVEL_3 === '1' ? '✓' : ''}</td>
+                        <td>${record.REMARKS || ''}</td>
+                        <td>${record.RBH_NAME || ''}</td>
+                        <td>${record.BL_NAME || ''}</td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-primary" onclick='showEditModal(${JSON.stringify(record)})'>
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+                // Apply current filter after refreshing the table
+                filterTable();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error fetching records. Please try again.');
+            });
+    }
+
+    window.hideBarangayRecords = function() {
+        currentBarangay = '';
+        document.getElementById('barangayGrid').style.display = 'flex';
+        document.getElementById('barangayRecordsSection').style.display = 'none';
+    }
+
+    window.showAddRecordModal = function() {
+        const modal = document.getElementById('addRecordModal');
+        const barangayInput = modal.querySelector('#barangay');
+        barangayInput.value = currentBarangay;
+        barangayInput.readOnly = true;
+        new bootstrap.Modal(modal).show();
+    }
+
+    window.showPrintModal = function(barangay) {
+        const modal = document.getElementById('printSelectionModal');
+        // Store selected barangay for printing
+        modal.dataset.barangay = barangay;
+        new bootstrap.Modal(modal).show();
+    }
+
+    // Modify handlePrint to filter by barangay
+    window.handlePrint = function() {
+        const modal = document.getElementById('printSelectionModal');
+        const selectedBarangay = modal.dataset.barangay;
+        
+        // Filter rows by barangay before printing
+        const rows = document.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+            const rowBarangay = row.cells[3].textContent.trim();
+            if (rowBarangay !== selectedBarangay) {
+                row.classList.add('hide-print');
+            }
+        });
+
+        // Existing print logic
+        const selectedColumns = Array.from(document.querySelectorAll('.print-column:checked')).map(cb => parseInt(cb.value));
+        // ... rest of the existing print logic ...
+
+        // After printing, remove the barangay filter
+        rows.forEach(row => row.classList.remove('hide-print'));
+    }
+
+    // Add this to your existing JavaScript
+    window.showEditModal = function(recordData) {
+        const modal = document.getElementById('editRecordModal');
+        const form = document.getElementById('editRecordForm');
+        
+        // Set form action
+        form.action = `/edit_record/${recordData.NO}`;
+        
+        // Set form values
+        document.getElementById('edit_record_id').value = recordData.NO;
+        document.getElementById('edit_voters_name').value = recordData.VOTERS_NAME || '';
+        document.getElementById('edit_precinct_no').value = recordData.PRECINCT_NO || '';
+        document.getElementById('edit_barangay').value = recordData.BARANGAY || '';
+        document.getElementById('edit_sitio').value = recordData.SITIO || '';
+        document.getElementById('edit_remarks').value = recordData.REMARKS || '';
+        document.getElementById('edit_rbh_name').value = recordData.RBH_NAME || '';
+        document.getElementById('edit_bl_name').value = recordData.BL_NAME || '';
+        
+        // Set checkboxes
+        document.getElementById('edit_rice_beneficiary').checked = recordData.RICE_BENEFICIARY_1 === '1';
+        document.getElementById('edit_rice_beneficiary_head').checked = recordData.RICE_BENEFICIARY_HEAD_2 === '1';
+        document.getElementById('edit_barangay_leader').checked = recordData.BARANGAY_LEADER_3 === '1';
+        document.getElementById('edit_level_1').checked = recordData.LEVEL_1 === '1';
+        document.getElementById('edit_level_2').checked = recordData.LEVEL_2 === '1';
+        document.getElementById('edit_level_3').checked = recordData.LEVEL_3 === '1';
+        
+        // Show modal
+        new bootstrap.Modal(modal).show();
+    }
+
+    // Add form submission handler for edit form
+    document.getElementById('editRecordForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.text();
+        })
+        .then(data => {
+            // Close the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editRecordModal'));
+            modal.hide();
+            
+            // Refresh the current barangay records
+            if (currentBarangay) {
+                showBarangayRecords(currentBarangay);
+            }
+            
+            // Show success message
+            const successMessage = document.createElement('div');
+            successMessage.style.position = 'fixed';
+            successMessage.style.top = '20px';
+            successMessage.style.left = '50%';
+            successMessage.style.transform = 'translateX(-50%)';
+            successMessage.style.backgroundColor = '#4CAF50';
+            successMessage.style.color = 'white';
+            successMessage.style.padding = '15px 25px';
+            successMessage.style.borderRadius = '8px';
+            successMessage.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+            successMessage.style.zIndex = '9999';
+            successMessage.style.fontFamily = "'Poppins', sans-serif";
+            successMessage.textContent = '✅ Record updated successfully!';
+            
+            document.body.appendChild(successMessage);
+            
+            setTimeout(() => {
+                successMessage.style.opacity = '0';
+                successMessage.style.transition = 'opacity 0.5s ease';
+                setTimeout(() => {
+                    document.body.removeChild(successMessage);
+                }, 500);
+            }, 3000);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating record. Please try again.');
+        });
+    });
+});
+</script>
+{% endblock %} 

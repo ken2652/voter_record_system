@@ -1,0 +1,280 @@
+  {% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid p-4" style="background-color: #f5f5f5; min-height: 100vh;">
+    <!-- Title Card -->
+    <div class="card rounded-4 border-0 shadow mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="card-title mb-0" style="font-family: 'Poppins', sans-serif; color: #333; font-weight: 600;">
+                    <i class="fas fa-users me-2"></i>User Management
+                </h4>
+                <a href="{{ url_for('register') }}" class="btn btn-primary">
+                    <i class="fas fa-user-plus me-2"></i>Add New User
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="card rounded-4 border-0 shadow">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th class="bg-primary text-white" style="background-color: #0052cc !important;">Avatar</th>
+                            <th class="bg-primary text-white" style="background-color: #0052cc !important;">Username</th>
+                            <th class="bg-primary text-white" style="background-color: #0052cc !important;">Email</th>
+                            <th class="bg-primary text-white" style="background-color: #0052cc !important;">Role</th>
+                            <th class="bg-primary text-white" style="background-color: #0052cc !important;">Status</th>
+                            <th class="bg-primary text-white" style="background-color: #0052cc !important;">Created At</th>
+                            <th class="bg-primary text-white" style="background-color: #0052cc !important;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr data-user-id="{{ user.id }}">
+                            <td>
+                                <img src="{{ get_avatar_url(user.email) }}" alt="User Avatar" 
+                                     class="rounded-circle" width="40" height="40">
+                            </td>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>
+                                <span class="badge {% if user.role == 'admin' %}bg-danger{% else %}bg-primary{% endif %}">
+                                    {{ user.role|title }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge {% if user.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                    {{ 'Active' if user.is_active else 'Inactive' }}
+                                </span>
+                            </td>
+                            <td>{{ user.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-sm btn-outline-primary btn-edit-user" title="Edit User">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger btn-delete-user" title="Delete User">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-warning btn-reset-password" title="Reset Password">
+                                        <i class="fas fa-key"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .table th {
+        font-size: 14px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 15px;
+    }
+    .table td {
+        padding: 15px;
+        vertical-align: middle;
+    }
+    .badge {
+        font-weight: 500;
+        padding: 6px 10px;
+        border-radius: 6px;
+    }
+    .btn-group .btn {
+        padding: 6px 10px;
+    }
+    .btn-group .btn:hover {
+        transform: translateY(-1px);
+    }
+    .table-responsive {
+        border-radius: 8px;
+        overflow: hidden;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentUserId = null;
+    let deleteModal = new bootstrap.Modal(document.getElementById('deleteUserModal'));
+    let resetPasswordModal = new bootstrap.Modal(document.getElementById('resetPasswordModal'));
+    let successModal = new bootstrap.Modal(document.getElementById('passwordResetSuccessModal'));
+
+    // Edit User Handler
+    document.querySelectorAll('.btn-edit-user').forEach(button => {
+        button.addEventListener('click', function() {
+            const userId = this.closest('tr').dataset.userId;
+            window.location.href = `/edit_user/${userId}`;
+        });
+    });
+
+    // Delete User Handler
+    document.querySelectorAll('.btn-delete-user').forEach(button => {
+        button.addEventListener('click', function() {
+            const row = this.closest('tr');
+            currentUserId = row.dataset.userId;
+            const username = row.querySelector('td:nth-child(2)').textContent;
+            document.getElementById('deleteUserName').textContent = username;
+            deleteModal.show();
+        });
+    });
+
+    // Confirm Delete Handler
+    document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+        fetch(`/delete_user/${currentUserId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            deleteModal.hide();
+            if (data.success) {
+                document.querySelector(`tr[data-user-id="${currentUserId}"]`).remove();
+            } else {
+                alert('Failed to delete user: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            deleteModal.hide();
+            alert('An error occurred while deleting the user');
+        });
+    });
+
+    // Reset Password Handler
+    document.querySelectorAll('.btn-reset-password').forEach(button => {
+        button.addEventListener('click', function() {
+            const row = this.closest('tr');
+            currentUserId = row.dataset.userId;
+            const username = row.querySelector('td:nth-child(2)').textContent;
+            document.getElementById('resetPasswordUserName').textContent = username;
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+            document.getElementById('passwordError').classList.add('d-none');
+            resetPasswordModal.show();
+        });
+    });
+
+    // Confirm Reset Password Handler
+    document.getElementById('confirmResetBtn').addEventListener('click', function() {
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        const errorDiv = document.getElementById('passwordError');
+        const username = document.getElementById('resetPasswordUserName').textContent;
+
+        if (newPassword !== confirmPassword) {
+            errorDiv.classList.remove('d-none');
+            return;
+        }
+
+        errorDiv.classList.add('d-none');
+        
+        fetch(`/reset_password/${currentUserId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ password: newPassword })
+        })
+        .then(response => response.json())
+        .then(data => {
+            resetPasswordModal.hide();
+            if (data.success) {
+                document.getElementById('successUserName').textContent = username;
+                successModal.show();
+            } else {
+                alert('Failed to reset password: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            resetPasswordModal.hide();
+            alert('An error occurred while resetting the password');
+        });
+    });
+});
+</script>
+
+<!-- Delete User Modal -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteUserModalLabel">Confirm Delete User</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete user "<span id="deleteUserName"></span>"?</p>
+                <p class="text-danger"><strong>This action cannot be undone!</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete User</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reset Password Modal -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="resetPasswordModalLabel">Reset User Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Reset password for user "<span id="resetPasswordUserName"></span>"</p>
+                <div class="mb-3">
+                    <label for="newPassword" class="form-label">New Password</label>
+                    <input type="password" class="form-control" id="newPassword" required>
+                </div>
+                <div class="mb-3">
+                    <label for="confirmPassword" class="form-label">Confirm Password</label>
+                    <input type="password" class="form-control" id="confirmPassword" required>
+                </div>
+                <div class="alert alert-danger d-none" id="passwordError">
+                    Passwords do not match!
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" id="confirmResetBtn">Reset Password</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Password Reset Success Modal -->
+<div class="modal fade" id="passwordResetSuccessModal" tabindex="-1" aria-labelledby="passwordResetSuccessModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="passwordResetSuccessModalLabel">Password Reset Successful</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <i class="fas fa-check-circle text-success" style="font-size: 48px;"></i>
+                    <p class="mt-3">The password has been successfully reset for user "<span id="successUserName"></span>".</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

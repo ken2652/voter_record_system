@@ -1,0 +1,163 @@
+/* General Styles */
+body {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.footer {
+    margin-top: auto;
+}
+
+/* Card Styles */
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: none;
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    background-color: #fff;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+/* Form Styles */
+.form-label {
+    font-weight: 500;
+    color: #495057;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Table Styles */
+.table {
+    margin-bottom: 0;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Button Styles */
+.btn {
+    font-weight: 500;
+}
+
+.btn-group-sm > .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+/* Badge Styles */
+.badge {
+    font-weight: 500;
+    padding: 0.5em 0.75em;
+}
+
+/* Navigation */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+    font-weight: 600;
+}
+
+.nav-link {
+    font-weight: 500;
+}
+
+/* Statistics Cards */
+.card .fa-2x {
+    font-size: 2rem;
+}
+
+/* Chart Container */
+#barangayChart {
+    min-height: 300px;
+}
+
+/* Photo Preview */
+.img-thumbnail {
+    border: 1px solid #dee2e6;
+    padding: 0.25rem;
+    background-color: #fff;
+    border-radius: 0.25rem;
+    max-width: 100%;
+    height: auto;
+}
+
+/* Required Field Indicator */
+.form-label:after {
+    content: "*";
+    color: #dc3545;
+    margin-left: 4px;
+}
+
+/* Alert Styles */
+.alert {
+    border: none;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.alert-dismissible .btn-close {
+    padding: 1.25rem;
+}
+
+/* Modal Styles */
+.modal-header {
+    border-bottom: 1px solid #dee2e6;
+    background-color: #f8f9fa;
+}
+
+.modal-footer {
+    border-top: 1px solid #dee2e6;
+    background-color: #f8f9fa;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .table-responsive {
+        margin-bottom: 1rem;
+    }
+    
+    .btn-group {
+        display: flex;
+        width: 100%;
+    }
+    
+    .btn-group .btn {
+        flex: 1;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+    }
+    
+    .table th {
+        background-color: #fff !important;
+    }
+} 

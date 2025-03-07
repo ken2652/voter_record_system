@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid p-4" style="background-color: #f5f5f5; min-height: 100vh;">
+    <!-- Title Card -->
+    <div class="card rounded-4 border-0 shadow mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="card-title mb-0" style="font-family: 'Poppins', sans-serif; color: #333; font-weight: 600;">
+                    <i class="fas fa-user-edit me-2"></i>Edit User
+                </h4>
+                <a href="{{ url_for('manage_users') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Users
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Form -->
+    <div class="card rounded-4 border-0 shadow">
+        <div class="card-body p-4">
+            <form method="POST" action="{{ url_for('edit_user', user_id=user.id) }}">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" value="{{ user.username }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="role" class="form-label">Role</label>
+                        <select class="form-select" id="role" name="role" required>
+                            <option value="user" {% if user.role == 'user' %}selected{% endif %}>User</option>
+                            <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check mt-4">
+                            <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {% if user.is_active %}checked{% endif %}>
+                            <label class="form-check-label" for="is_active">
+                                Active Account
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Save Changes
+                        </button>
+                        <a href="{{ url_for('manage_users') }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-label {
+        font-family: 'Poppins', sans-serif;
+        font-size: 14px;
+        color: #333;
+        font-weight: 500;
+    }
+    .form-control, .form-select {
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+        padding: 0.75rem 1rem;
+        font-size: 14px;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #0052cc;
+        box-shadow: 0 0 0 0.2rem rgba(0, 82, 204, 0.25);
+    }
+    .form-check-label {
+        font-family: 'Poppins', sans-serif;
+        font-size: 14px;
+    }
+    .btn {
+        padding: 0.75rem 1.5rem;
+        font-size: 14px;
+        font-family: 'Poppins', sans-serif;
+    }
+</style>
+{% endblock %} 

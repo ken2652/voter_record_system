@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2>Add New Voter Record</h2>
+        <form method="POST" class="mt-4">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="voters_name">Voter's Name</label>
+                        <input type="text" class="form-control" id="voters_name" name="voters_name" required>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="precinct_no">Precinct No.</label>
+                        <input type="text" class="form-control" id="precinct_no" name="precinct_no" required>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="barangay">Barangay</label>
+                        <input type="text" class="form-control" id="barangay" name="barangay" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="sitio">Sitio</label>
+                        <input type="text" class="form-control" id="sitio" name="sitio" required>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="rbh_name">RBH Name</label>
+                        <input type="text" class="form-control" id="rbh_name" name="rbh_name">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="bl_name">BL Name</label>
+                        <input type="text" class="form-control" id="bl_name" name="bl_name">
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <label>Status</label>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input checkbox-lg" id="rice_beneficiary_1" name="rice_beneficiary_1" value="1">
+                        <label class="form-check-label" for="rice_beneficiary_1">Rice Beneficiary 1</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input checkbox-lg" id="rice_beneficiary_head_2" name="rice_beneficiary_head_2" value="1">
+                        <label class="form-check-label" for="rice_beneficiary_head_2">Rice Beneficiary Head 2</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input checkbox-lg" id="barangay_leader_3" name="barangay_leader_3" value="1">
+                        <label class="form-check-label" for="barangay_leader_3">Barangay Leader 3</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <label>Levels</label>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input checkbox-lg" id="level_1" name="level_1" value="1">
+                        <label class="form-check-label" for="level_1">Level 1</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input checkbox-lg" id="level_2" name="level_2" value="1">
+                        <label class="form-check-label" for="level_2">Level 2</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input checkbox-lg" id="level_3" name="level_3" value="1">
+                        <label class="form-check-label" for="level_3">Level 3</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <div class="form-group">
+                        <label for="remarks">Remarks</label>
+                        <textarea class="form-control" id="remarks" name="remarks" rows="3"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-12">
+                    <button type="submit" class="btn btn-primary">Save Record</button>
+                    <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %} 

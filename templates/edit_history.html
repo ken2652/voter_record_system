@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid p-4">
+    <!-- Combined Title and Search Card -->
+    <div class="card rounded-4 border-0 shadow mb-4">
+        <div class="card-body p-4">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h4 class="mb-0 text-uppercase" style="font-family: 'Poppins', sans-serif; color: #333; font-weight: 600;">
+                        Edit History
+                    </h4>
+                </div>
+                <div class="col-md-4">
+                    <div class="input-group input-group-sm">
+                        <input type="text" id="searchInput" class="form-control" placeholder="Search records...">
+                        <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Cards -->
+    {% set seen_records = [] %}
+    {% for entry in history %}
+        {% if entry.record_id not in seen_records %}
+            {% set _ = seen_records.append(entry.record_id) %}
+            <div class="card mb-3 shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>Modified By:</strong> {{ entry.modified_by or 'System' }}
+                    </div>
+                    <div>
+                        <strong>Modified At:</strong> {{ entry.modified_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>Record ID:</strong> {{ entry.record_id }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Voter's Name:</strong> {{ entry.voters_name }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Barangay:</strong> {{ entry.barangay }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Action:</strong>
+                            {% if entry.action_type == 'INSERT' %}
+                                <span class="badge bg-success">Added</span>
+                            {% elif entry.action_type == 'UPDATE' %}
+                                <span class="badge bg-primary">Updated</span>
+                            {% elif entry.action_type == 'DELETE' %}
+                                <span class="badge bg-danger">Deleted</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if entry.changes %}
+                    <div class="mt-3">
+                        <button class="btn btn-sm btn-outline-primary" type="button" 
+                                data-bs-toggle="collapse" 
+                                data-bs-target="#changes{{ loop.index }}" 
+                                aria-expanded="false">
+                            View Changes
+                        </button>
+                        <div class="collapse mt-2" id="changes{{ loop.index }}">
+                            <div class="card card-body bg-light">
+                                <pre class="mb-0" style="font-size: 0.875rem;">{{ entry.changes }}</pre>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="mt-3">
+                        <span class="text-muted">No changes recorded</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    {% endfor %}
+</div>
+
+<!-- Add custom styles -->
+{% block styles %}
+<style>
+    .card-header {
+        background-color: #f8f9fa;
+    }
+    .badge {
+        font-size: 0.875rem;
+    }
+    pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+    .card:hover {
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+        transition: box-shadow 0.3s ease-in-out;
+    }
+    #searchInput:focus {
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        border-color: #80bdff;
+    }
+</style>
+{% endblock %}
+
+<!-- Add JavaScript for search functionality -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('keyup', filterHistory);
+    });
+
+    function filterHistory() {
+        const searchValue = document.getElementById('searchInput').value.toLowerCase();
+        const historyCards = document.querySelectorAll('.card.mb-3.shadow-sm');
+
+        historyCards.forEach(card => {
+            const voterName = card.querySelector('[class*="col-md-3"]:nth-child(2)').textContent.toLowerCase();
+            const barangay = card.querySelector('[class*="col-md-3"]:nth-child(3)').textContent.toLowerCase();
+            const recordId = card.querySelector('[class*="col-md-3"]:nth-child(1)').textContent.toLowerCase();
+
+            if (voterName.includes(searchValue) || 
+                barangay.includes(searchValue) || 
+                recordId.includes(searchValue)) {
+                card.style.display = '';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+
+    function clearSearch() {
+        document.getElementById('searchInput').value = '';
+        filterHistory();
+    }
+</script>
+{% endblock %}

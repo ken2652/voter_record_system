@@ -1,0 +1,20 @@
+-- Drop the existing table
+DROP TABLE IF EXISTS voters_record;
+
+-- Create the table with correct structure
+CREATE TABLE voters_record (
+    NO INT AUTO_INCREMENT PRIMARY KEY,
+    VOTERS_NAME VARCHAR(255),
+    PRECINCT_NO VARCHAR(50),
+    BARANGAY VARCHAR(100),
+    SITIO VARCHAR(100),
+    RICE_BENEFICIARY_1 CHAR(1),
+    RICE_BENEFICIARY_HEAD_2 CHAR(1),
+    BARANGAY_LEADER_3 CHAR(1),
+    LEVEL_1 CHAR(1),
+    LEVEL_2 CHAR(1),
+    LEVEL_3 CHAR(1),
+    REMARKS TEXT,
+    RBH_NAME VARCHAR(255),
+    BL_NAME VARCHAR(255)
+); 
